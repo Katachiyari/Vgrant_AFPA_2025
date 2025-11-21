@@ -25,6 +25,20 @@ Gradually set up a virtual infrastructure using **Vagrant** + **VirtualBox** to 
 
 ---
 
+## Prerequisites
+
+Before you start, please install the following tools:
+
+- **VirtualBox**  
+  [Official documentation and downloads](https://www.virtualbox.org/wiki/Downloads)
+
+- **Vagrant**  
+  [Official documentation and downloads](https://www.vagrantup.com/downloads)
+
+> Make sure you choose the version matching your operating system (Linux, Windows, Mac).
+
+---
+
 ## Project 1 – Creating a Debian Base Box
 
 ### Specifications
@@ -45,31 +59,174 @@ Project: `vagrant-debian`
 - Display a custom MOTD after provisioning:  
   `"VM TP – Debian Base"`
 
----
+#### Deliverables
 
-### Deliverables
-
-- A repo folder **`tp-vagrant-debian`** containing your **Vagrantfile** and associated files.
+- Repo folder **`tp-vagrant-debian`** with your **Vagrantfile** and associated files.
 
 ---
 
-> Feel free to customize with extra icons, screenshots or diagrams.  
-> This style stays clear, modern, and easy to scan.
+## Project 2 – VM with LAMP Stack & Shared Folder
+
+### Specifications
+
+Project: `tp-vagrant-lamp`
+
+- **Base Box**: `bento/debian-13`
+- **Hostname**: `lamp-server`
+- **Port Forwarding**: Host `7676` → VM `80`
+- **Shared Folder**: `./shared` → `/var/www/html`
+    - owner: `www-data`
+    - group: `www-data`
+    - fmode=`644`, dmode=`755`
+
+**Provisioning must:**
+
+- Install Apache2
+- Install minimal PHP stack (`php`, `php-cli`)
+- Enable Apache at boot
+- Clean `/var/www/html`
+- Copy a sample `index.html` into the shared folder
+- Display a custom MOTD
+
+**Script requirements:**
+
+- Idempotency: the script must be replayable (`vagrant provision` without error)
+
+**Validation**
+
+- Site accessible at: `http://ip:7676`
+
+#### Deliverables
+
+- Directory: `tp-vagrant-lamp`
+    - `Vagrantfile`
+    - provisioning script
 
 ---
 
-Ce format utilise :
-- Les badges Shields.io pour les technologies (plus uniformes que les icônes mélangées).
-- Une mise en page horizontale.
-- Les séparateurs “---” pour aérer.
-- Le gras et l’italique pour bien hiérarchiser l’information.
-- Des listes à puces soignées.
+## Project 3 – Multi-VM Infrastructure: Web + DB
 
-Tu peux adapter chaque section selon ton besoin, ajouter par exemple des liens “Installation” et “Usage” avec icône et badges si tu veux aller encore plus vers l’esprit “fiche projet” professionnelle. Ce dashboard est compatible avec la plupart des rendus GitHub et améliore la lisibilité et l’aspect visuel[image:2][web:6][web:8].
+### Specifications
 
-Un point important pour obtenir ce rendu :  
-- N’utilise pas `<img>` HTML mais privilégie les badges Markdown de Shields.io.
-- Structure ton texte avec des titres, des listes à puces et des encadrés Markdown.
-- Aère visuellement chaque groupe d’informations.
+Project: `tp-vagrant-web-db` with two VMs:
 
-Si tu veux des exemples personnalisés ou d’autres badges, demande-les !
+#### VM 1 – Database Server (db)
+
+- **Hostname**: `db-server`
+- **Box**: `bento/debian-13`
+- **Private IP**: `192.168.56.11`
+- **RAM**: `1024 MB`
+- **CPU**: `1`
+
+**Provisioning must:**
+
+- Install MariaDB
+- Configure MariaDB to listen on all interfaces (`bind-address = 0.0.0.0`)
+- Use `./db_sql/db_init.sql` to:
+    - create DB `tp_db`
+    - create user `tp_user@%` with password `tp_password`
+    - grant all privileges on DB
+- Enable MariaDB at boot
+
+---
+
+#### VM 2 – Web Server (web)
+
+- **Hostname**: `web-server`
+- **Box**: `bento/debian-13`
+- **Private IP**: `192.168.56.10`
+- **RAM**: `1024 MB`
+- **CPU**: `1`
+- **Port Forwarding**: Host `8080` → VM `80`
+- **Shared Folder**: `./shared` → `/var/www/html`
+
+
+**Provisioning must:**
+
+- Install Apache2
+- Install minimal PHP stack (`php`, `php-cli`)
+- Enable Apache at boot
+- Clean `/var/www/html`
+- Copy a sample `index.html` into the shared folder
+- Display a custom MOTD
+
+**Script requirements:**
+
+- Idempotency: the script must be replayable (`vagrant provision` without error)
+
+**Validation**
+
+- Site accessible at: `http://ip:7676`
+
+#### Deliverables
+
+- Directory: `tp-vagrant-lamp`
+    - `Vagrantfile`
+    - provisioning script
+
+---
+
+## Project 3 – Multi-VM Infrastructure: Web + DB
+
+### Specifications
+
+Project: `tp-vagrant-web-db` with two VMs:
+
+#### VM 1 – Database Server (db)
+
+- **Hostname**: `db-server`
+- **Box**: `bento/debian-13`
+- **Private IP**: `192.168.56.11`
+- **RAM**: `1024 MB`
+- **CPU**: `1`
+
+**Provisioning must:**
+
+- Install MariaDB
+- Configure MariaDB to listen on all interfaces (`bind-address = 0.0.0.0`)
+- Use `./db_sql/db_init.sql` to:
+    - create DB `tp_db`
+    - create user `tp_user@%` with password `tp_password`
+    - grant all privileges on DB
+- Enable MariaDB at boot
+
+---
+
+#### VM 2 – Web Server (web)
+
+- **Hostname**: `web-server`
+- **Box**: `bento/debian-13`
+- **Private IP**: `192.168.56.10`
+- **RAM**: `1024 MB`
+- **CPU**: `1`
+- **Port Forwarding**: Host `8080` → VM `80`
+- **Shared Folder**: `./shared` → `/var/www/html`
+
+**Provisioning must:**
+
+- Install Apache2 + PHP + `php-mysql`
+- Configure `/var/www/html` as shared folder
+- Install `index.php` that:
+    - tests connection to DB `192.168.56.11`
+    - displays a message if successful
+
+#### Interconnections
+
+- Both VMs communicate via private network
+    - Web VM > DB VM (port `3306` open)
+
+#### Functional Objective
+
+- Access from host: `http://ip:8080`
+
+#### Deliverables
+
+- Directory: `tp-vagrant-web-db`
+    - Vagrantfile (+ optional scripts and configs)
+
+---
+
+> 🎯 **Tip:** Structure your provisioning scripts for idempotency and include helpful comments for each step.  
+> Test every VM from the host as described to ensure correct deployment.
+
+---
