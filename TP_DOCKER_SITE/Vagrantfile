@@ -1,0 +1,28 @@
+# Vagrantfile
+
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+  config.vm.network "forwarded_port", guest: 80, host: 8080
+  config.vm.network "private_network", ip: "192.168.56.10"
+
+  # Optimisation VM (CPU/RAM)
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048"
+    vb.cpus = 2
+    vb.name = "Docker-Dev-Host"
+  end
+
+  # 1. Installation de Docker (ne s'exécute qu'une fois grâce au script intelligent)
+  config.vm.provision "shell", path: "install_docker.sh"
+
+  config.vm.provision "shell", run: "always", inline: <<-SHELL
+  cd /vagrant
+  if [ -f docker-compose.yml ]; then
+    echo "🚀 Démarrage des conteneurs Docker..."
+    docker compose up -d
+  else
+    echo "⚠️ Aucun docker-compose.yml trouvé dans /vagrant, skip."
+  fi
+SHELL
+
+end
